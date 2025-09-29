@@ -26,7 +26,19 @@ jobs:
         run: npm ci || npm i
 
       - name: Set Vite base for pages
-        run: echo "VITE_BASE=/${{ github.event.repository.name }}/" >> $GITHUB_ENV
+        run: |
+          if [[ "${{ github.repository_owner }}" == "${{ github.event.repository.name }}" ]]; then
+            # user/organization pages repo -> root deployment
+            echo "VITE_BASE=/" >> $GITHUB_ENV
+          else
+            echo "VITE_BASE=/${{ github.event.repository.name }}/" >> $GITHUB_ENV
+          fi
+
+      - name: Add CNAME if custom domain is configured
+        if: ${{ secrets.CUSTOM_DOMAIN != '' }}
+        run: |
+          mkdir -p dist
+          echo "${{ secrets.CUSTOM_DOMAIN }}" > dist/CNAME
 
       - name: Build
         run: npm run build
