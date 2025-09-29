@@ -1,13 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// For GitHub Pages, set base to '/<repo>/' when deploying. We'll read from env.
-const base = (process.env && process.env['VITE_BASE']) || '/';
+// For GitHub Pages root deployment
+const base = '/';
 
 export default defineConfig({
   base,
   plugins: [react()],
   build: {
+    outDir: 'dist',
     target: 'es2020'
   },
   worker: {
