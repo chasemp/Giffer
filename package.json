@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:deploy": "npm run build && cp -r dist/* . && echo 'giffer.523.life' > CNAME && touch .nojekyll",
     "preview": "vite preview --port 5173"
   },
   "dependencies": {
