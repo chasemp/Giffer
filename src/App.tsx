@@ -160,7 +160,14 @@ export default function App() {
   }
 
   return (
-    <div className="container">
+    <div className="container"
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+      onDrop={(e) => {
+        e.preventDefault();
+        const f = e.dataTransfer.files?.[0];
+        if (f && f.type.startsWith('video/')) setFile(f);
+      }}
+    >
       <h1>PWA GIF Maker</h1>
       <div className="card">
         <div className="row">
