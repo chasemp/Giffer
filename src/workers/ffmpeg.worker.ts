@@ -1,5 +1,6 @@
-// Worker context
-import { createFFmpeg, fetchFile, FFmpeg } from '@ffmpeg/ffmpeg';
+// Worker context - modern @ffmpeg/ffmpeg API
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 
 let ffmpeg: FFmpeg | null = null;
 let isLoading = false;
@@ -24,15 +25,15 @@ async function ensureFfmpeg() {
     return ffmpeg!;
   }
   isLoading = true;
-  ffmpeg = createFFmpeg({
-    corePath: undefined, // let the package resolve its core; can be swapped for CDN if needed
-    log: false,
-    progress: ({ ratio }) => {
-      (self as any).postMessage({ ratio });
-    },
+  ffmpeg = new FFmpeg();
+  ffmpeg.on('progress', ({ progress }) => {
+    (self as any).postMessage({ ratio: Math.max(0, Math.min(1, progress)) });
   });
-  await ffmpeg.load();
-  isLoading = false;
+  try {
+    await ffmpeg.load();
+  } finally {
+    isLoading = false;
+  }
   return ffmpeg;
 }
 
@@ -60,37 +61,37 @@ self.addEventListener('message', async (ev: MessageEvent) => {
     const duration = Math.max(0.1, p.endSec - start);
     const q = pickQualitySettings(p.quality);
 
-    ff.FS('writeFile', inputName, await fetchFile(new Blob([p.file])));
+    await ff.writeFile(inputName, await fetchFile(new Blob([p.file])));
 
     // 1) Generate palette with scaling and fps
-    await ff.run(
+    await ff.exec([
       '-ss', String(start),
       '-t', String(duration),
       '-i', inputName,
       '-vf', `fps=${p.fps},scale=${p.width}:-1:flags=${q.scaleFlags},palettegen`,
-      palette
-    );
+      palette,
+    ]);
 
     // 2) Use palette to create final GIF
     const loopFlag = p.loop ? '0' : '1';
-    await ff.run(
+    await ff.exec([
       '-ss', String(start),
       '-t', String(duration),
       '-i', inputName,
       '-i', palette,
       '-lavfi', `fps=${p.fps},scale=${p.width}:-1:flags=${q.scaleFlags} [x]; [x][1:v] paletteuse=dither=${q.dither}`,
       '-loop', loopFlag,
-      output
-    );
+      output,
+    ]);
 
-    const data = ff.FS('readFile', output);
+    const data = (await ff.readFile(output)) as Uint8Array;
     (self as any).postMessage({ type: 'done', data }, [data.buffer]);
 
     // cleanup
     try {
-      ff.FS('unlink', inputName);
-      ff.FS('unlink', palette);
-      ff.FS('unlink', output);
+      await ff.deleteFile(inputName);
+      await ff.deleteFile(palette);
+      await ff.deleteFile(output);
     } catch {}
   } catch (err: any) {
     (self as any).postMessage({ ratio: 1, message: err?.message || 'encode failed' });
