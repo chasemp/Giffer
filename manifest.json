@@ -8,5 +8,26 @@
   "theme_color": "#0f172a",
   "icons": [
     { "src": "/icons/app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
-  ]
+  ],
+  "file_handlers": [
+    {
+      "action": ".",
+      "accept": {
+        "video/*": [".mp4", ".mov", ".avi", ".webm", ".mkv", ".m4v", ".3gp", ".flv", ".wmv"]
+      }
+    }
+  ],
+  "share_target": {
+    "action": ".",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "video",
+          "accept": ["video/*"]
+        }
+      ]
+    }
+  }
 }
