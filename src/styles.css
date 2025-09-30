@@ -13,3 +13,82 @@ input[type="range"] { width: 100%; }
 video, canvas, img { max-width: 100%; border-radius: 8px; }
 .progress { height: 8px; background: color-mix(in srgb, CanvasText 10%, transparent); border-radius: 999px; overflow: hidden; }
 .progress > div { height: 100%; background: #10b981; width: 0%; }
+
+/* Timeline Component Styles */
+.timeline-container {
+  margin: 16px 0;
+}
+
+.timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: color-mix(in srgb, CanvasText 70%, transparent);
+}
+
+.timeline {
+  position: relative;
+  height: 40px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.timeline-track {
+  position: relative;
+  height: 8px;
+  background: color-mix(in srgb, CanvasText 15%, transparent);
+  border-radius: 4px;
+  margin: 16px 0;
+}
+
+.timeline-selected {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: #2563eb;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.timeline-handle {
+  position: absolute;
+  top: -6px;
+  width: 20px;
+  height: 20px;
+  background: #2563eb;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: grab;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.timeline-handle:active {
+  cursor: grabbing;
+}
+
+.timeline-handle:hover {
+  transform: translateX(-50%) scale(1.1);
+  transition: transform 0.1s ease;
+}
+
+.timeline-handle-start {
+  z-index: 2;
+}
+
+.timeline-handle-end {
+  z-index: 2;
+}
+
+.timeline-info {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: color-mix(in srgb, CanvasText 70%, transparent);
+}
+
+.timeline-info span {
+  font-weight: 500;
+}
