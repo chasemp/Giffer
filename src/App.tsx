@@ -70,6 +70,108 @@ function formatSeconds(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+interface TimelineProps {
+  duration: number;
+  start: number;
+  end: number;
+  onStartChange: (start: number) => void;
+  onEndChange: (end: number) => void;
+}
+
+function Timeline({ duration, start, end, onStartChange, onEndChange }: TimelineProps) {
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState<'start' | 'end' | null>(null);
+
+  const handleMouseDown = (e: React.MouseEvent, type: 'start' | 'end') => {
+    e.preventDefault();
+    setIsDragging(type);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !timelineRef.current) return;
+    
+    const rect = timelineRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    const time = percentage * duration;
+    
+    if (isDragging === 'start') {
+      onStartChange(Math.min(time, end - 0.1));
+    } else {
+      onEndChange(Math.max(time, start + 0.1));
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(null);
+  };
+
+  const handleTimelineClick = (e: React.MouseEvent) => {
+    if (!timelineRef.current) return;
+    
+    const rect = timelineRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    const time = percentage * duration;
+    
+    // If clicked closer to start, move start; otherwise move end
+    const startDistance = Math.abs(time - start);
+    const endDistance = Math.abs(time - end);
+    
+    if (startDistance < endDistance) {
+      onStartChange(Math.min(time, end - 0.1));
+    } else {
+      onEndChange(Math.max(time, start + 0.1));
+    }
+  };
+
+  const startPercentage = (start / duration) * 100;
+  const endPercentage = (end / duration) * 100;
+  const selectedWidth = endPercentage - startPercentage;
+
+  return (
+    <div className="timeline-container">
+      <div className="timeline-labels">
+        <span>0:00</span>
+        <span>{formatSeconds(duration)}</span>
+      </div>
+      <div 
+        ref={timelineRef}
+        className="timeline"
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onClick={handleTimelineClick}
+      >
+        <div className="timeline-track">
+          <div 
+            className="timeline-selected"
+            style={{
+              left: `${startPercentage}%`,
+              width: `${selectedWidth}%`
+            }}
+          />
+          <div 
+            className="timeline-handle timeline-handle-start"
+            style={{ left: `${startPercentage}%` }}
+            onMouseDown={(e) => handleMouseDown(e, 'start')}
+          />
+          <div 
+            className="timeline-handle timeline-handle-end"
+            style={{ left: `${endPercentage}%` }}
+            onMouseDown={(e) => handleMouseDown(e, 'end')}
+          />
+        </div>
+      </div>
+      <div className="timeline-info">
+        <span>Start: {formatSeconds(start)}</span>
+        <span>End: {formatSeconds(end)}</span>
+        <span>Duration: {formatSeconds(end - start)}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -212,31 +314,16 @@ export default function App() {
               <video ref={videoRef} src={objectUrl ?? undefined} controls playsInline style={{ width: '100%' }} />
               <div className="spacer" />
               <div className="card">
-                <div className="row">
-                  <label>Start: {formatSeconds(start)}</label>
-                  <input
-                    type="range"
-                    min={0}
-                    max={Math.max(0, duration - 0.1)}
-                    step={0.1}
-                    value={Math.min(start, end)}
-                    onChange={(e) => setStart(Math.min(parseFloat(e.target.value), end))}
-                  />
-                </div>
-                <div className="row">
-                  <label>End: {formatSeconds(end)}</label>
-                  <input
-                    type="range"
-                    min={start + 0.1}
-                    max={duration}
-                    step={0.1}
-                    value={end}
-                    onChange={(e) => setEnd(Math.max(parseFloat(e.target.value), start + 0.1))}
-                  />
-                </div>
+                <Timeline
+                  duration={duration}
+                  start={start}
+                  end={end}
+                  onStartChange={setStart}
+                  onEndChange={setEnd}
+                />
                 <div className="row">
                   <small>
-                    Segment length: {formatSeconds(Math.max(0, end - start))} • Estimated frames: {estimatedFrames}
+                    Estimated frames: {estimatedFrames}
                   </small>
                 </div>
               </div>
