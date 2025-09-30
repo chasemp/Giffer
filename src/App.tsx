@@ -117,6 +117,7 @@ export default function App() {
     setProgress(0);
     const buffer = await file.arrayBuffer();
     try {
+      console.log('Starting GIF encoding...', { start, end, fps, width, loop, quality });
       const data = await encode({
         file: buffer,
         startSec: start,
@@ -125,12 +126,18 @@ export default function App() {
         width,
         loop,
         quality,
-        onProgress: (p) => setProgress(Math.max(0, Math.min(1, p.ratio)) * 100),
+        onProgress: (p) => {
+          console.log('Encoding progress:', p.ratio);
+          setProgress(Math.max(0, Math.min(1, p.ratio)) * 100);
+        },
       });
+      console.log('Encoding completed, data size:', data.length);
       const blob = new Blob([data], { type: 'image/gif' });
       const url = URL.createObjectURL(blob);
+      console.log('GIF URL created:', url);
       setGifUrl(url);
     } catch (e) {
+      console.error('Encoding failed:', e);
       alert((e as Error).message ?? 'Failed to encode GIF');
     } finally {
       setIsEncoding(false);
@@ -139,22 +146,41 @@ export default function App() {
 
   function handleDownload() {
     if (!gifUrl) return;
-    const a = document.createElement('a');
-    a.href = gifUrl;
-    a.download = 'output.gif';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    try {
+      const a = document.createElement('a');
+      a.href = gifUrl;
+      a.download = `gif-${Date.now()}.gif`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Download failed. Please try again.');
+    }
   }
 
   async function handleShare() {
     if (!gifUrl) return;
-    const res = await fetch(gifUrl);
-    const blob = await res.blob();
-    const fileToShare = new File([blob], 'output.gif', { type: blob.type });
-    if ((navigator as any).canShare?.({ files: [fileToShare] })) {
-      await (navigator as any).share({ files: [fileToShare], title: 'GIF' });
-    } else {
+    try {
+      const res = await fetch(gifUrl);
+      const blob = await res.blob();
+      const fileToShare = new File([blob], `gif-${Date.now()}.gif`, { type: blob.type });
+      
+      // Check if Web Share API is available and can share files
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
+        await navigator.share({ 
+          files: [fileToShare], 
+          title: 'My GIF',
+          text: 'Check out this GIF I created!'
+        });
+      } else {
+        // Fallback to download if sharing is not supported
+        handleDownload();
+      }
+    } catch (error) {
+      console.error('Share failed:', error);
+      // Fallback to download on error
       handleDownload();
     }
   }
@@ -240,7 +266,9 @@ export default function App() {
                 </div>
                 <div className="spacer" />
                 <div className="row">
-                  <button className="btn primary" onClick={handleExport} disabled={isEncoding}>Export GIF</button>
+                  <button className="btn primary" onClick={handleExport} disabled={isEncoding}>
+                    {isEncoding ? 'Encoding...' : 'Export GIF'}
+                  </button>
                 </div>
                 {isEncoding && (
                   <div style={{ marginTop: 12 }}>
@@ -248,14 +276,22 @@ export default function App() {
                     <small>Encoding... {progress.toFixed(0)}%</small>
                   </div>
                 )}
+                {!isEncoding && progress > 0 && !gifUrl && (
+                  <div style={{ marginTop: 12, color: '#ef4444' }}>
+                    <small>Export failed. Please try again.</small>
+                  </div>
+                )}
               </div>
               <div className="spacer" />
               {gifUrl && (
                 <div className="card">
-                  <img src={gifUrl} alt="GIF preview" />
+                  <div style={{ marginBottom: 12, color: '#10b981', fontWeight: 'bold' }}>
+                    ✓ GIF Ready!
+                  </div>
+                  <img src={gifUrl} alt="GIF preview" style={{ maxHeight: '200px', objectFit: 'contain' }} />
                   <div className="row" style={{ marginTop: 12 }}>
-                    <button className="btn" onClick={handleDownload}>Download</button>
-                    <button className="btn" onClick={handleShare}>Share</button>
+                    <button className="btn" onClick={handleDownload}>💾 Download</button>
+                    <button className="btn" onClick={handleShare}>📤 Share</button>
                   </div>
                 </div>
               )}
