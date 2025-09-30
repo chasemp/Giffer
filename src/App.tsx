@@ -412,7 +412,7 @@ export default function App() {
       }}
     >
       <div className="app-header">
-        <img src="/logo.svg" alt="Giffer Logo" className="app-logo" />
+        <img src="/logo.svg" alt="Pipkin Logo" className="app-logo" />
       </div>
       {isSharedFile && (
         <div className="card" style={{ backgroundColor: '#10b981', color: 'white', marginBottom: '12px' }}>

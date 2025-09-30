@@ -1,4 +1,5 @@
-# PWA GIF Maker
+# Pipkin
+## the gif making dragon
 
 Create, save, and share GIFs from local video in your browser. Offline-capable PWA, uses ffmpeg.wasm for on-device processing.
 
@@ -26,5 +27,5 @@ npm run preview
 
 - Large WASM (ffmpeg) is lazy loaded in a worker
 - For Pages, `VITE_BASE` is injected so assets resolve under `/<repo>/`
-# Giffer
-Do it for the giffer
+# Pipkin
+the gif making dragon
