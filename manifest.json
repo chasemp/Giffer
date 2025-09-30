@@ -1,6 +1,6 @@
 {
-  "name": "PWA GIF Maker",
-  "short_name": "GIF Maker",
+  "name": "Giffer",
+  "short_name": "Giffer",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

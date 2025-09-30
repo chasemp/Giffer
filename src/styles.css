@@ -92,3 +92,16 @@ video, canvas, img { max-width: 100%; border-radius: 8px; }
 .timeline-info span {
   font-weight: 500;
 }
+
+/* App Header and Logo Styles */
+.app-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.app-logo {
+  height: 60px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
