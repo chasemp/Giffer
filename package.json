@@ -5,9 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "build:deploy": "npm run build && cp -r dist/* . && echo 'giffer.523.life' > CNAME && touch .nojekyll",
-    "preview": "vite preview --port 5173"
+    "build": "tsc -b && vite build && npm run build:sw",
+    "build:sw": "tsc src/sw.ts --outDir docs --target es2020 --lib es2020,webworker --skipLibCheck",
+    "preview": "vite preview --port 3006",
+    "test": "echo 'No tests specified' && exit 0",
+    "port": "echo 'This project runs on port 3005 (see PORT_REGISTRY.md)'",
+    "port:check": "lsof -i :3005 || echo 'Port 3005 is free'",
+    "port:kill": "lsof -ti :3005 | xargs kill -9 2>/dev/null || echo 'No process on port 3005'",
+    "port:force": "npm run port:kill && npm run dev",
+    "ports": "bash ../peadoubleueh/scripts/check-ports.sh",
+    "ports:kill": "bash ../peadoubleueh/scripts/kill-port.sh"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "0.12.6",
@@ -22,5 +29,13 @@
     "@types/node": "20.14.12",
     "typescript": "5.6.3",
     "vite": "5.4.8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chasemp/Giffer.git"
+  },
+  "homepage": "https://giffer.523.life/",
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

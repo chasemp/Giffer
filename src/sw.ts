@@ -54,7 +54,7 @@ self.addEventListener('fetch', (event: any) => {
   // Handle share target POST requests
   if (event.request.method === 'POST' && url.pathname === '/') {
     event.respondWith(
-      event.request.formData().then((formData) => {
+      event.request.formData().then((formData: FormData) => {
         const file = formData.get('video') as File;
         if (file && file.type.startsWith('video/')) {
           // Store the shared file in IndexedDB and redirect to the app

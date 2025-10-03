@@ -1,0 +1,64 @@
+# Cursor AI Rules for Pipkin (Giffer) PWA
+
+## Critical: Source vs Build File Pattern
+
+**⚠️ NEVER EDIT FILES IN /docs DIRECTORY**
+
+The `/docs` directory contains ONLY auto-generated build output.
+All edits must be made in `/src` or `/public`.
+
+### Project Structure
+
+```
+Giffer/
+├── src/           ← ✅ EDIT SOURCE CODE HERE
+│   ├── index.html
+│   ├── main.tsx
+│   ├── App.tsx
+│   ├── sw.ts
+│   └── workers/
+├── public/        ← ✅ EDIT STATIC ASSETS HERE
+│   ├── manifest.json
+│   ├── icons/
+│   └── logo.svg
+├── docs/          ← ❌ NEVER EDIT (auto-generated from src/ & public/)
+│   ├── index.html
+│   ├── sw.js
+│   ├── assets/
+│   └── icons/
+└── vite.config.ts
+```
+
+### Deployment Pattern: /src → /docs
+
+- **Development:** Edit files in `/src` and `/public`
+- **Build:** `npm run build` generates `/docs` from source
+- **Deploy:** GitHub Pages serves from `/docs` on main branch
+- **Port:** 3005 (see PORT_REGISTRY.md in peadoubleueh project)
+
+### If User Asks to Edit Something
+
+1. **Check location first:** Is it in `/docs`?
+2. **If yes:** Find the source file in `/src` or `/public` and edit THAT
+3. **If no:** Edit the file directly
+
+### Build Process
+
+```bash
+npm run dev      # Develop (port 3005)
+npm run build    # Build to /docs (includes service worker compilation)
+git commit       # Commit both /src and /docs
+git push         # Deploy (live in ~2 min)
+```
+
+### Port Management
+
+- **Dev Port:** 3005 (registered in ../peadoubleueh/PORT_REGISTRY.md)
+- **Commands:** `npm run port`, `npm run port:check`, `npm run port:kill`
+
+## See Also
+
+- Main PWA documentation: `../peadoubleueh/project-docs/`
+- Port registry: `../peadoubleueh/PORT_REGISTRY.md`
+- Deployment guide: `../peadoubleueh/project-docs/DEPLOYMENT_ARCHITECTURE.md`
+

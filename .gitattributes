@@ -1,0 +1,6 @@
+# Mark /docs directory as generated code
+/docs/** linguist-generated=true
+
+# This prevents GitHub from showing diffs for docs/ files in PRs
+# and marks them as auto-generated in the repository statistics
+
