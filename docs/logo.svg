@@ -1,0 +1,97 @@
+<svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rainbow background -->
+  <defs>
+    <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ff0000;stop-opacity:1" />
+      <stop offset="16.66%" style="stop-color:#ff7f00;stop-opacity:1" />
+      <stop offset="33.33%" style="stop-color:#ffff00;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00ff00;stop-opacity:1" />
+      <stop offset="66.66%" style="stop-color:#0000ff;stop-opacity:1" />
+      <stop offset="83.33%" style="stop-color:#4b0082;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9400d3;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Dragon gradient -->
+    <linearGradient id="dragonBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#90EE90;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#32CD32;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Dragon belly gradient -->
+    <linearGradient id="dragonBelly" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFACD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F5DEB3;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Text gradient -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ff7f00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9400d3;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rainbow arc -->
+  <path d="M 50 120 Q 200 40 350 120" stroke="url(#rainbow)" stroke-width="8" fill="none" stroke-linecap="round"/>
+  
+  <!-- Stars/Sparkles -->
+  <g fill="#ff7f00">
+    <polygon points="80,60 85,70 95,70 87,77 90,87 80,82 70,87 73,77 65,70 75,70" />
+    <polygon points="320,50 325,60 335,60 327,67 330,77 320,72 310,77 313,67 305,60 315,60" />
+    <polygon points="150,30 153,36 159,36 155,40 157,46 150,43 143,46 145,40 141,36 147,36" />
+    <polygon points="250,25 253,31 259,31 255,35 257,41 250,38 243,41 245,35 241,31 247,31" />
+  </g>
+  
+  <!-- Dragon body -->
+  <ellipse cx="200" cy="100" rx="35" ry="25" fill="url(#dragonBody)" />
+  
+  <!-- Dragon belly -->
+  <ellipse cx="200" cy="105" rx="25" ry="18" fill="url(#dragonBelly)" />
+  
+  <!-- Dragon head -->
+  <circle cx="200" cy="85" r="20" fill="url(#dragonBody)" />
+  
+  <!-- Dragon eyes -->
+  <circle cx="195" cy="80" r="3" fill="#32CD32" />
+  <circle cx="205" cy="80" r="3" fill="#32CD32" />
+  <!-- Winking right eye -->
+  <path d="M 202 80 Q 205 82 208 80" stroke="#32CD32" stroke-width="2" fill="none" />
+  
+  <!-- Dragon mouth -->
+  <path d="M 190 90 Q 200 95 210 90" stroke="#32CD32" stroke-width="2" fill="none" />
+  
+  <!-- Dragon fangs -->
+  <polygon points="195,90 197,95 199,90" fill="white" />
+  <polygon points="201,90 203,95 205,90" fill="white" />
+  
+  <!-- Dragon wings -->
+  <ellipse cx="180" cy="95" rx="12" ry="8" fill="#D2691E" transform="rotate(-20 180 95)" />
+  <ellipse cx="220" cy="95" rx="12" ry="8" fill="#D2691E" transform="rotate(20 220 95)" />
+  
+  <!-- Dragon tail -->
+  <path d="M 165 100 Q 150 110 140 105" stroke="url(#dragonBody)" stroke-width="8" fill="none" stroke-linecap="round" />
+  
+  <!-- Dragon arms -->
+  <ellipse cx="185" cy="105" rx="6" ry="12" fill="url(#dragonBody)" transform="rotate(-20 185 105)" />
+  <ellipse cx="215" cy="105" rx="6" ry="12" fill="url(#dragonBody)" transform="rotate(20 215 105)" />
+  
+  <!-- Jester hat -->
+  <g fill="#FFD700">
+    <polygon points="200,65 190,55 200,50 210,55" fill="#FF0000" />
+    <polygon points="200,65 195,55 200,50 205,55" fill="#0000FF" />
+    <polygon points="200,65 192,55 200,50 208,55" fill="#FFFF00" />
+  </g>
+  
+  <!-- Hat bells -->
+  <circle cx="190" cy="55" r="2" fill="#FFD700" />
+  <circle cx="200" cy="50" r="2" fill="#FFD700" />
+  <circle cx="210" cy="55" r="2" fill="#FFD700" />
+  
+  <!-- GIF text -->
+  <text x="240" y="85" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#2563eb" stroke="white" stroke-width="1">GIF</text>
+  
+  <!-- Giffer title -->
+  <text x="200" y="150" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="url(#textGradient)" stroke="white" stroke-width="1" text-anchor="middle">Giffer</text>
+  
+  <!-- Tagline -->
+  <text x="200" y="170" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#333" text-anchor="middle">WHERE EVERY BLINK BECOMES A BRILLIANT BOOP-DE-DOO!</text>
+</svg>
