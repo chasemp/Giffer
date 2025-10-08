@@ -82,9 +82,10 @@ interface TimelineProps {
   end: number;
   onStartChange: (start: number) => void;
   onEndChange: (end: number) => void;
+  videoRef: React.RefObject<HTMLVideoElement>;
 }
 
-function Timeline({ duration, start, end, onStartChange, onEndChange }: TimelineProps) {
+function Timeline({ duration, start, end, onStartChange, onEndChange, videoRef }: TimelineProps) {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState<'start' | 'end' | null>(null);
 
@@ -105,6 +106,11 @@ function Timeline({ duration, start, end, onStartChange, onEndChange }: Timeline
       onStartChange(Math.min(time, end - 0.1));
     } else {
       onEndChange(Math.max(time, start + 0.1));
+    }
+    
+    // Update video position to show what's being selected
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
     }
   };
 
@@ -128,6 +134,11 @@ function Timeline({ duration, start, end, onStartChange, onEndChange }: Timeline
       onStartChange(Math.min(time, end - 0.1));
     } else {
       onEndChange(Math.max(time, start + 0.1));
+    }
+    
+    // Update video position to show what's being selected
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
     }
   };
 
@@ -173,6 +184,27 @@ function Timeline({ duration, start, end, onStartChange, onEndChange }: Timeline
         <span>Start: {formatSeconds(start)}</span>
         <span>End: {formatSeconds(end)}</span>
         <span>Duration: {formatSeconds(end - start)}</span>
+      </div>
+      <div className="timeline-preview">
+        <button 
+          className="btn" 
+          onClick={() => {
+            if (videoRef.current) {
+              videoRef.current.currentTime = start;
+              videoRef.current.play();
+              // Pause at the end of the selection
+              const handleTimeUpdate = () => {
+                if (videoRef.current && videoRef.current.currentTime >= end) {
+                  videoRef.current.pause();
+                  videoRef.current.removeEventListener('timeupdate', handleTimeUpdate);
+                }
+              };
+              videoRef.current.addEventListener('timeupdate', handleTimeUpdate);
+            }
+          }}
+        >
+          ▶️ Preview Selection
+        </button>
       </div>
     </div>
   );
@@ -454,6 +486,7 @@ export default function App() {
                   end={end}
                   onStartChange={setStart}
                   onEndChange={setEnd}
+                  videoRef={videoRef}
                 />
                 <div className="row">
                   <small>
