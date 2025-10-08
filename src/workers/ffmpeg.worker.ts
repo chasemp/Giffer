@@ -30,11 +30,20 @@ async function ensureFfmpeg() {
     (self as any).postMessage({ ratio: Math.max(0, Math.min(1, progress)) });
   });
   try {
+    console.log('Starting FFmpeg load...');
     // Configure FFmpeg to load WASM files from the correct base URL
-    await ffmpeg.load({
+    const loadPromise = ffmpeg.load({
       coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js',
       wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm',
     });
+    
+    // Add timeout to detect hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('FFmpeg load timeout after 30 seconds')), 30000);
+    });
+    
+    await Promise.race([loadPromise, timeoutPromise]);
+    console.log('FFmpeg load completed successfully');
   } catch (error) {
     console.error('FFmpeg load failed:', error);
     throw error;
@@ -44,18 +53,6 @@ async function ensureFfmpeg() {
   return ffmpeg;
 }
 
-type TextOverlay = {
-  id: string;
-  text: string;
-  startTime: number;
-  endTime: number;
-  x: number;
-  y: number;
-  fontSize: number;
-  color: string;
-  fontFamily: string;
-};
-
 type EncodePayload = {
   file: ArrayBuffer;
   startSec: number;
@@ -64,7 +61,6 @@ type EncodePayload = {
   width: number;
   loop: boolean;
   quality: 'low' | 'medium' | 'high';
-  textOverlays?: TextOverlay[];
 };
 
 self.addEventListener('message', async (ev: MessageEvent) => {
@@ -92,33 +88,14 @@ self.addEventListener('message', async (ev: MessageEvent) => {
       palette,
     ]);
 
-    // 2) Use palette to create final GIF with optional text overlays
+    // 2) Use palette to create final GIF
     const loopFlag = p.loop ? '0' : '1';
-    
-    // Build text overlay filter if text overlays exist
-    let textFilter = '';
-    if (p.textOverlays && p.textOverlays.length > 0) {
-      const textFilters = p.textOverlays.map((overlay, index) => {
-        const overlayStartTime = Math.max(0, overlay.startTime - start);
-        const overlayEndTime = Math.min(duration, overlay.endTime - start);
-        const overlayDuration = overlayEndTime - overlayStartTime;
-        
-        if (overlayDuration <= 0) return '';
-        
-        return `drawtext=text='${overlay.text.replace(/'/g, "\\'")}':fontfile=/System/Library/Fonts/Arial.ttf:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:x=${overlay.x}*W/100:y=${overlay.y}*H/100:enable='between(t,${overlayStartTime},${overlayEndTime})'`;
-      }).filter(f => f).join(',');
-      
-      if (textFilters) {
-        textFilter = `,${textFilters}`;
-      }
-    }
-    
     await ff.exec([
       '-ss', String(start),
       '-t', String(duration),
       '-i', inputName,
       '-i', palette,
-      '-lavfi', `fps=${p.fps},scale=${p.width}:-1:flags=${q.scaleFlags}${textFilter} [x]; [x][1:v] paletteuse=dither=${q.dither}`,
+      '-lavfi', `fps=${p.fps},scale=${p.width}:-1:flags=${q.scaleFlags} [x]; [x][1:v] paletteuse=dither=${q.dither}`,
       '-loop', loopFlag,
       output,
     ]);

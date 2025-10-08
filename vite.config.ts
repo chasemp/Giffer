@@ -80,6 +80,9 @@ export default defineConfig({
   worker: {
     format: 'es'
   },
+  optimizeDeps: {
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
+  },
   server: {
     port: 3005,        // Registered in PORT_REGISTRY.md
     host: '0.0.0.0',   // Allow network access
