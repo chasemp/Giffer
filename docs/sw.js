@@ -11,16 +11,6 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
     event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => (k !== CACHE ? caches.delete(k) : Promise.resolve())))));
 });
-self.addEventListener('fetch', (event) => {
-    const req = event.request;
-    if (req.method !== 'GET')
-        return;
-    event.respondWith(caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((cache) => cache.put(req, copy));
-        return res;
-    }).catch(() => cached)));
-});
 // Handle file sharing and file handling
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SHARE_VIDEO') {
@@ -35,11 +25,12 @@ self.addEventListener('message', (event) => {
         });
     }
 });
-// Handle share target (when app is opened via share)
+// Handle fetch requests (caching and share target)
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
+    const req = event.request;
     // Handle share target POST requests
-    if (event.request.method === 'POST' && url.pathname === '/') {
+    if (req.method === 'POST' && url.pathname === '/') {
         event.respondWith(event.request.formData().then((formData) => {
             const file = formData.get('video');
             if (file && file.type.startsWith('video/')) {
@@ -57,7 +48,16 @@ self.addEventListener('fetch', (event) => {
         }).catch(() => {
             return new Response('Error processing shared file', { status: 500 });
         }));
+        return;
     }
+    // Handle GET requests with caching
+    if (req.method !== 'GET')
+        return;
+    event.respondWith(caches.match(req).then((cached) => cached || fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((cache) => cache.put(req, copy));
+        return res;
+    }).catch(() => cached)));
 });
 // Store shared file in IndexedDB
 async function storeSharedFile(file) {
