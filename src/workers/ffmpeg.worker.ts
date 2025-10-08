@@ -30,8 +30,11 @@ async function ensureFfmpeg() {
     (self as any).postMessage({ ratio: Math.max(0, Math.min(1, progress)) });
   });
   try {
-    // Load FFmpeg with default configuration
-    await ffmpeg.load();
+    // Configure FFmpeg to load WASM files from the correct base URL
+    await ffmpeg.load({
+      coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js',
+      wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm',
+    });
   } catch (error) {
     console.error('FFmpeg load failed:', error);
     throw error;
