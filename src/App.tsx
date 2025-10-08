@@ -488,7 +488,7 @@ export default function App() {
                 <div className="spacer" />
                 <div className="row">
                   <button className="btn primary" onClick={handleExport} disabled={isEncoding}>
-                    {isEncoding ? 'Encoding...' : 'Export GIF'}
+                    {isEncoding ? 'Encoding...' : 'Create GIF'}
                   </button>
                 </div>
                 {isEncoding && (
