@@ -93,6 +93,16 @@ video, canvas, img { max-width: 100%; border-radius: 8px; }
   font-weight: 500;
 }
 
+.timeline-preview {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.timeline-preview .btn {
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
 /* App Header and Logo Styles */
 .app-header {
   text-align: center;
