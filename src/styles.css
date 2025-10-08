@@ -103,6 +103,81 @@ video, canvas, img { max-width: 100%; border-radius: 8px; }
   padding: 8px 12px;
 }
 
+/* Text Overlay Markers */
+.timeline-text-marker {
+  position: absolute;
+  top: -8px;
+  transform: translateX(-50%);
+  cursor: pointer;
+  z-index: 3;
+}
+
+.timeline-text-marker-icon {
+  background: #ff6b6b;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.timeline-text-marker-label {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  margin-top: 2px;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: color-mix(in srgb, Canvas 100%, transparent);
+  border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-content h3 {
+  margin: 0 0 16px 0;
+  color: color-mix(in srgb, CanvasText 100%, transparent);
+}
+
+.text-editor .row {
+  margin-bottom: 12px;
+}
+
+.text-editor label {
+  min-width: 100px;
+  font-weight: 500;
+  color: color-mix(in srgb, CanvasText 90%, transparent);
+}
+
 /* App Header and Logo Styles */
 .app-header {
   text-align: center;

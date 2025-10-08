@@ -24,6 +24,17 @@ function useFfmpegWorker() {
       width: number;
       loop: boolean;
       quality: 'low' | 'medium' | 'high';
+      textOverlays?: Array<{
+        id: string;
+        text: string;
+        startTime: number;
+        endTime: number;
+        x: number;
+        y: number;
+        fontSize: number;
+        color: string;
+        fontFamily: string;
+      }>;
       onProgress?: (p: WorkerProgress) => void;
     }): Promise<Uint8Array> => {
       return new Promise((resolve, reject) => {
@@ -83,9 +94,22 @@ interface TimelineProps {
   onStartChange: (start: number) => void;
   onEndChange: (end: number) => void;
   videoRef: React.RefObject<HTMLVideoElement>;
+  textOverlays: Array<{
+    id: string;
+    text: string;
+    startTime: number;
+    endTime: number;
+    x: number;
+    y: number;
+    fontSize: number;
+    color: string;
+    fontFamily: string;
+  }>;
+  onTextOverlayTimeChange: (id: string, time: number) => void;
+  onTextOverlayClick: (id: string) => void;
 }
 
-function Timeline({ duration, start, end, onStartChange, onEndChange, videoRef }: TimelineProps) {
+function Timeline({ duration, start, end, onStartChange, onEndChange, videoRef, textOverlays, onTextOverlayTimeChange, onTextOverlayClick }: TimelineProps) {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState<'start' | 'end' | null>(null);
   const videoUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -198,6 +222,43 @@ function Timeline({ duration, start, end, onStartChange, onEndChange, videoRef }
             style={{ left: `${endPercentage}%` }}
             onMouseDown={(e) => handleMouseDown(e, 'end')}
           />
+          {/* Text overlay markers */}
+          {textOverlays.map((overlay) => {
+            const overlayPercentage = (overlay.startTime / duration) * 100;
+            return (
+              <div
+                key={overlay.id}
+                className="timeline-text-marker"
+                style={{ left: `${overlayPercentage}%` }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTextOverlayClick(overlay.id);
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const handleDrag = (e: MouseEvent) => {
+                    if (!timelineRef.current) return;
+                    const rect = timelineRef.current.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const percentage = Math.max(0, Math.min(1, x / rect.width));
+                    const time = percentage * duration;
+                    onTextOverlayTimeChange(overlay.id, time);
+                    updateVideoPosition(time);
+                  };
+                  const handleDragEnd = () => {
+                    document.removeEventListener('mousemove', handleDrag);
+                    document.removeEventListener('mouseup', handleDragEnd);
+                  };
+                  document.addEventListener('mousemove', handleDrag);
+                  document.addEventListener('mouseup', handleDragEnd);
+                }}
+              >
+                <div className="timeline-text-marker-icon">📝</div>
+                <div className="timeline-text-marker-label">{overlay.text}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
       <div className="timeline-info">
@@ -245,6 +306,19 @@ export default function App() {
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [isEncoding, setIsEncoding] = useState<boolean>(false);
   const [isSharedFile, setIsSharedFile] = useState<boolean>(false);
+  const [textOverlays, setTextOverlays] = useState<Array<{
+    id: string;
+    text: string;
+    startTime: number;
+    endTime: number;
+    x: number;
+    y: number;
+    fontSize: number;
+    color: string;
+    fontFamily: string;
+  }>>([]);
+  const [showTextEditor, setShowTextEditor] = useState<boolean>(false);
+  const [editingOverlay, setEditingOverlay] = useState<string | null>(null);
   const { encode } = useFfmpegWorker();
 
   useEffect(() => {
@@ -382,6 +456,44 @@ export default function App() {
     return Math.round(len * fps);
   }, [start, end, fps]);
 
+  // Text overlay management functions
+  const addTextOverlay = () => {
+    const newOverlay = {
+      id: Date.now().toString(),
+      text: 'Your text here',
+      startTime: start,
+      endTime: end,
+      x: 50, // percentage from left
+      y: 50, // percentage from top
+      fontSize: 24,
+      color: '#ffffff',
+      fontFamily: 'Arial'
+    };
+    setTextOverlays([...textOverlays, newOverlay]);
+    setEditingOverlay(newOverlay.id);
+    setShowTextEditor(true);
+  };
+
+  const updateTextOverlay = (id: string, updates: Partial<typeof textOverlays[0]>) => {
+    setTextOverlays(overlays => 
+      overlays.map(overlay => 
+        overlay.id === id ? { ...overlay, ...updates } : overlay
+      )
+    );
+  };
+
+  const deleteTextOverlay = (id: string) => {
+    setTextOverlays(overlays => overlays.filter(overlay => overlay.id !== id));
+    if (editingOverlay === id) {
+      setEditingOverlay(null);
+      setShowTextEditor(false);
+    }
+  };
+
+  const setTextOverlayTime = (id: string, time: number) => {
+    updateTextOverlay(id, { startTime: time, endTime: time + 1 });
+  };
+
   async function handleExport() {
     if (!file) return;
     setGifUrl(null);
@@ -398,6 +510,7 @@ export default function App() {
         width,
         loop,
         quality,
+        textOverlays: textOverlays,
         onProgress: (p) => {
           console.log('Encoding progress:', p.ratio);
           setProgress(Math.max(0, Math.min(1, p.ratio)) * 100);
@@ -507,6 +620,12 @@ export default function App() {
                   onStartChange={setStart}
                   onEndChange={setEnd}
                   videoRef={videoRef}
+                  textOverlays={textOverlays}
+                  onTextOverlayTimeChange={setTextOverlayTime}
+                  onTextOverlayClick={(id) => {
+                    setEditingOverlay(id);
+                    setShowTextEditor(true);
+                  }}
                 />
                 <div className="row">
                   <small>
@@ -540,6 +659,9 @@ export default function App() {
                 </div>
                 <div className="spacer" />
                 <div className="row">
+                  <button className="btn" onClick={addTextOverlay}>
+                    📝 Add Text
+                  </button>
                   <button className="btn primary" onClick={handleExport} disabled={isEncoding}>
                     {isEncoding ? 'Encoding...' : 'Create GIF'}
                   </button>
@@ -573,6 +695,124 @@ export default function App() {
           </div>
         )}
       </div>
+      
+      {/* Text Editor Modal */}
+      {showTextEditor && editingOverlay && (
+        <div className="modal-overlay" onClick={() => setShowTextEditor(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Edit Text Overlay</h3>
+            {(() => {
+              const overlay = textOverlays.find(o => o.id === editingOverlay);
+              if (!overlay) return null;
+              
+              return (
+                <div className="text-editor">
+                  <div className="row">
+                    <label>Text:</label>
+                    <input
+                      type="text"
+                      value={overlay.text}
+                      onChange={(e) => updateTextOverlay(overlay.id, { text: e.target.value })}
+                      style={{ flex: 1 }}
+                    />
+                  </div>
+                  
+                  <div className="row">
+                    <label>Font Size:</label>
+                    <input
+                      type="range"
+                      min="12"
+                      max="72"
+                      value={overlay.fontSize}
+                      onChange={(e) => updateTextOverlay(overlay.id, { fontSize: parseInt(e.target.value) })}
+                    />
+                    <span>{overlay.fontSize}px</span>
+                  </div>
+                  
+                  <div className="row">
+                    <label>Color:</label>
+                    <input
+                      type="color"
+                      value={overlay.color}
+                      onChange={(e) => updateTextOverlay(overlay.id, { color: e.target.value })}
+                    />
+                    <select
+                      value={overlay.fontFamily}
+                      onChange={(e) => updateTextOverlay(overlay.id, { fontFamily: e.target.value })}
+                    >
+                      <option value="Arial">Arial</option>
+                      <option value="Helvetica">Helvetica</option>
+                      <option value="Times New Roman">Times New Roman</option>
+                      <option value="Courier New">Courier New</option>
+                      <option value="Verdana">Verdana</option>
+                    </select>
+                  </div>
+                  
+                  <div className="row">
+                    <label>Position X:</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={overlay.x}
+                      onChange={(e) => updateTextOverlay(overlay.id, { x: parseInt(e.target.value) })}
+                    />
+                    <span>{overlay.x}%</span>
+                  </div>
+                  
+                  <div className="row">
+                    <label>Position Y:</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={overlay.y}
+                      onChange={(e) => updateTextOverlay(overlay.id, { y: parseInt(e.target.value) })}
+                    />
+                    <span>{overlay.y}%</span>
+                  </div>
+                  
+                  <div className="row">
+                    <label>Start Time:</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max={duration}
+                      step="0.1"
+                      value={overlay.startTime}
+                      onChange={(e) => updateTextOverlay(overlay.id, { startTime: parseFloat(e.target.value) })}
+                    />
+                    <span>{formatSeconds(overlay.startTime)}</span>
+                  </div>
+                  
+                  <div className="row">
+                    <label>End Time:</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max={duration}
+                      step="0.1"
+                      value={overlay.endTime}
+                      onChange={(e) => updateTextOverlay(overlay.id, { endTime: parseFloat(e.target.value) })}
+                    />
+                    <span>{formatSeconds(overlay.endTime)}</span>
+                  </div>
+                  
+                  <div className="row" style={{ marginTop: 16 }}>
+                    <button className="btn" onClick={() => deleteTextOverlay(overlay.id)}>
+                      🗑️ Delete
+                    </button>
+                    <button className="btn primary" onClick={() => setShowTextEditor(false)}>
+                      Done
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+      
       <div className="spacer" />
       <p>
         All processing is done on-device in your browser. For higher quality, we use ffmpeg.wasm and palette-based GIF encoding.
