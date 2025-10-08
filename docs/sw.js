@@ -29,6 +29,10 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     const req = event.request;
+    // Skip caching for unsupported schemes (chrome-extension, etc.)
+    if (url.protocol === 'chrome-extension:' || url.protocol === 'moz-extension:' || url.protocol === 'safari-extension:') {
+        return;
+    }
     // Handle share target POST requests
     if (req.method === 'POST' && url.pathname === '/') {
         event.respondWith(event.request.formData().then((formData) => {
@@ -55,7 +59,15 @@ self.addEventListener('fetch', (event) => {
         return;
     event.respondWith(caches.match(req).then((cached) => cached || fetch(req).then((res) => {
         const copy = res.clone();
-        caches.open(CACHE).then((cache) => cache.put(req, copy));
+        caches.open(CACHE).then((cache) => {
+            try {
+                cache.put(req, copy);
+            }
+            catch (error) {
+                // Silently ignore caching errors for unsupported schemes
+                console.warn('Failed to cache request:', req.url, error);
+            }
+        });
         return res;
     }).catch(() => cached)));
 });
