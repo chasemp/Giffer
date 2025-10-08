@@ -88,6 +88,19 @@ interface TimelineProps {
 function Timeline({ duration, start, end, onStartChange, onEndChange, videoRef }: TimelineProps) {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState<'start' | 'end' | null>(null);
+  const videoUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced video position update to prevent excessive updates during dragging
+  const updateVideoPosition = (time: number) => {
+    if (videoUpdateTimeoutRef.current) {
+      clearTimeout(videoUpdateTimeoutRef.current);
+    }
+    videoUpdateTimeoutRef.current = setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.currentTime = time;
+      }
+    }, 50); // 50ms debounce
+  };
 
   const handleMouseDown = (e: React.MouseEvent, type: 'start' | 'end') => {
     e.preventDefault();
@@ -103,19 +116,25 @@ function Timeline({ duration, start, end, onStartChange, onEndChange, videoRef }
     const time = percentage * duration;
     
     if (isDragging === 'start') {
-      onStartChange(Math.min(time, end - 0.1));
+      const newStart = Math.min(time, end - 0.1);
+      onStartChange(newStart);
+      // Update video to show the start of selection
+      updateVideoPosition(newStart);
     } else {
-      onEndChange(Math.max(time, start + 0.1));
-    }
-    
-    // Update video position to show what's being selected
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
+      const newEnd = Math.max(time, start + 0.1);
+      onEndChange(newEnd);
+      // Update video to show the end of selection
+      updateVideoPosition(newEnd);
     }
   };
 
   const handleMouseUp = () => {
     setIsDragging(null);
+    // Clear any pending video updates when dragging stops
+    if (videoUpdateTimeoutRef.current) {
+      clearTimeout(videoUpdateTimeoutRef.current);
+      videoUpdateTimeoutRef.current = null;
+    }
   };
 
   const handleTimelineClick = (e: React.MouseEvent) => {
@@ -131,14 +150,15 @@ function Timeline({ duration, start, end, onStartChange, onEndChange, videoRef }
     const endDistance = Math.abs(time - end);
     
     if (startDistance < endDistance) {
-      onStartChange(Math.min(time, end - 0.1));
+      const newStart = Math.min(time, end - 0.1);
+      onStartChange(newStart);
+      // Update video to show the start of selection
+      updateVideoPosition(newStart);
     } else {
-      onEndChange(Math.max(time, start + 0.1));
-    }
-    
-    // Update video position to show what's being selected
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
+      const newEnd = Math.max(time, start + 0.1);
+      onEndChange(newEnd);
+      // Update video to show the end of selection
+      updateVideoPosition(newEnd);
     }
   };
 
