@@ -3,7 +3,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 type WorkerProgress = { ratio: number; message?: string };
 type WorkerDone = { type: 'done'; data: Uint8Array };
 type WorkerLog = { type: 'log'; message: string };
-type WorkerEvent = WorkerProgress | WorkerDone | WorkerLog;
+type WorkerError = { type: 'error'; message: string };
+type WorkerEvent = WorkerProgress | WorkerDone | WorkerLog | WorkerError;
 
 function useFfmpegWorker() {
   const workerRef = useRef<Worker | null>(null);
@@ -36,6 +37,11 @@ function useFfmpegWorker() {
           }
           if (data.type === 'log') {
             return; // could surface logs if needed
+          }
+          if (data.type === 'error') {
+            worker.removeEventListener('message', handleMessage as any);
+            reject(new Error(data.message));
+            return;
           }
           if (data.type === 'done') {
             worker.removeEventListener('message', handleMessage as any);

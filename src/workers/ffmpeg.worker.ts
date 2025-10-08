@@ -30,7 +30,11 @@ async function ensureFfmpeg() {
     (self as any).postMessage({ ratio: Math.max(0, Math.min(1, progress)) });
   });
   try {
+    // Load FFmpeg with default configuration
     await ffmpeg.load();
+  } catch (error) {
+    console.error('FFmpeg load failed:', error);
+    throw error;
   } finally {
     isLoading = false;
   }
@@ -94,7 +98,7 @@ self.addEventListener('message', async (ev: MessageEvent) => {
       await ff.deleteFile(output);
     } catch {}
   } catch (err: any) {
-    (self as any).postMessage({ ratio: 1, message: err?.message || 'encode failed' });
+    (self as any).postMessage({ type: 'error', message: err?.message || 'encode failed' });
   }
 });
 
