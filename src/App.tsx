@@ -12,16 +12,16 @@ function useFfmpegWorker() {
   useEffect(() => {
     // Worker creation (currently unused due to main thread processing)
     try {
-      const worker = new Worker(new URL('./workers/ffmpeg.worker.ts', import.meta.url), { type: 'module' });
-      workerRef.current = worker;
-      return () => worker.terminate();
+    const worker = new Worker(new URL('./workers/ffmpeg.worker.ts', import.meta.url), { type: 'module' });
+    workerRef.current = worker;
+    return () => worker.terminate();
     } catch (error) {
       console.error('Failed to create worker:', error);
     }
   }, []);
 
   const encode = React.useCallback(
-    async (opts: {
+      async (opts: {
       file: ArrayBuffer;
       startSec: number;
       endSec: number;
@@ -78,18 +78,98 @@ function useFfmpegWorker() {
         
         console.log('Creating GIF...');
         const loopFlag = opts.loop ? '0' : '1';
+        
+        
+        // Build filter complex
+        const filterComplex = `fps=${opts.fps},scale=${opts.width}:-1:flags=${q.scaleFlags} [x]; [x][1:v] paletteuse=dither=${q.dither}`;
+        
+        console.log('Filter complex:', filterComplex);
+        
+        let execSuccess = false;
+        try {
+          console.log('Starting FFmpeg exec...');
+          
+        // Simple case: just the video
+        console.log('Creating simple GIF...');
         await ffmpeg.exec([
-          '-ss', String(start),
-          '-t', String(duration),
+          '-ss', String(opts.startSec),
+          '-t', String(opts.endSec - opts.startSec),
           '-i', inputName,
           '-i', palette,
-          '-lavfi', `fps=${opts.fps},scale=${opts.width}:-1:flags=${q.scaleFlags} [x]; [x][1:v] paletteuse=dither=${q.dither}`,
+          '-lavfi', filterComplex,
           '-loop', loopFlag,
           output,
         ]);
+          
+          execSuccess = true;
+          console.log('FFmpeg exec completed successfully');
+        } catch (execError) {
+          console.error('FFmpeg exec failed, trying alternative approach:', execError);
+          console.error('Error details:', {
+            name: (execError as Error).name,
+            message: (execError as Error).message,
+            stack: (execError as Error).stack
+          });
+        }
         
         console.log('Reading output...');
-        const data = (await ffmpeg.readFile(output)) as Uint8Array;
+        
+        // Debug: List files before trying to read
+        try {
+          const filesBeforeRead = await ffmpeg.listDir('/');
+          console.log('Files before readFile:', filesBeforeRead);
+          
+          // Check if output file exists and get its details
+          const outputExists = filesBeforeRead.some((file: any) => file.name === output);
+          console.log('Output file exists:', outputExists);
+          
+          if (outputExists) {
+            try {
+              const fileInfo = filesBeforeRead.find((file: any) => file.name === output);
+              console.log('Output file info:', fileInfo);
+            } catch (infoError) {
+              console.log('Could not get file info:', infoError);
+            }
+          }
+        } catch (listError) {
+          console.log('Could not list files before readFile:', listError);
+        }
+        
+        let data: Uint8Array;
+        try {
+          data = (await ffmpeg.readFile(output)) as Uint8Array;
+          console.log('Output file read successfully, size:', data.length);
+          
+          // Validate output file
+          if (data.length === 0) {
+            console.error('Output file is empty (0 bytes) - this indicates FFmpeg filter failure');
+            throw new Error('Output file is empty (0 bytes) - FFmpeg filter may have failed silently');
+          }
+          
+          // Validate that it's actually a GIF file
+          if (data.length < 6 || data[0] !== 0x47 || data[1] !== 0x49 || data[2] !== 0x46) {
+            console.error('Output file is not a valid GIF (invalid header)');
+            throw new Error('Output file is not a valid GIF file');
+          }
+          
+          console.log('GIF validation passed, size:', data.length, 'bytes');
+        } catch (readError) {
+          console.error('Failed to read output file:', readError);
+          console.error('Read error details:', {
+            name: (readError as Error).name,
+            message: (readError as Error).message,
+            stack: (readError as Error).stack
+          });
+          
+          // List files to debug
+          try {
+            const files = await ffmpeg.listDir('/');
+            console.log('Available files:', files);
+          } catch (listError) {
+            console.error('Failed to list files:', listError);
+          }
+          throw readError;
+        }
         
         // Cleanup
         try {
@@ -288,6 +368,7 @@ export default function App() {
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [isEncoding, setIsEncoding] = useState<boolean>(false);
   const [isSharedFile, setIsSharedFile] = useState<boolean>(false);
+  
   const { encode } = useFfmpegWorker();
 
   useEffect(() => {
@@ -425,15 +506,22 @@ export default function App() {
     return Math.round(len * fps);
   }, [start, end, fps]);
 
+
   async function handleExport() {
     if (!file) return;
     setGifUrl(null);
     setIsEncoding(true);
     setProgress(0);
-    const buffer = await file.arrayBuffer();
+    
     try {
-      console.log('Starting GIF encoding...', { start, end, fps, width, loop, quality });
-      const data = await encode({
+      console.log('Starting GIF creation...', { start, end, fps, width, loop, quality });
+      
+      // Step 1: Create basic GIF from video using FFmpeg
+      console.log('Step 1: Creating basic GIF from video...');
+      setProgress(10);
+      
+      const buffer = await file.arrayBuffer();
+      const basicGifData = await encode({
         file: buffer,
         startSec: start,
         endSec: end,
@@ -442,18 +530,25 @@ export default function App() {
         loop,
         quality,
         onProgress: (p) => {
-          console.log('Encoding progress:', p.ratio);
-          setProgress(Math.max(0, Math.min(1, p.ratio)) * 100);
+          const progress = Math.max(0, Math.min(1, p.ratio)) * 80; // 80% for basic GIF
+          setProgress(10 + progress);
         },
       });
-      console.log('Encoding completed, data size:', data.length);
-      const blob = new Blob([data], { type: 'image/gif' });
+      
+      console.log('Basic GIF created, size:', basicGifData.length);
+      setProgress(90);
+      
+      // Create GIF blob and URL
+      const blob = new Blob([basicGifData], { type: 'image/gif' });
       const url = URL.createObjectURL(blob);
-      console.log('GIF URL created:', url);
       setGifUrl(url);
+      
+      setProgress(100);
+      console.log('GIF creation completed successfully');
+      
     } catch (e) {
-      console.error('Encoding failed:', e);
-      alert((e as Error).message ?? 'Failed to encode GIF');
+      console.error('GIF creation failed:', e);
+      alert((e as Error).message ?? 'Failed to create GIF');
     } finally {
       setIsEncoding(false);
     }
@@ -581,6 +676,7 @@ export default function App() {
                     <option value="high">High</option>
                   </select>
                 </div>
+                
                 <div className="spacer" />
                 <div className="row">
                   <button className="btn primary" onClick={handleExport} disabled={isEncoding}>
@@ -595,7 +691,7 @@ export default function App() {
                 )}
                 {!isEncoding && progress > 0 && !gifUrl && (
                   <div style={{ marginTop: 12, color: '#ef4444' }}>
-                    <small>Export failed. Please try again.</small>
+                    <small>Creation failed. Please try again.</small>
                   </div>
                 )}
               </div>
